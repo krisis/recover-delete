@@ -18,6 +18,7 @@ func main() {
 		secretKey string
 		endpoint  string
 		dryRun    bool
+		insecure  bool
 	)
 	flag.StringVar(&prefix, "prefix", "", "prefix matching the objects to be recovered")
 	flag.StringVar(&bucket, "bucket", "", "bucket")
@@ -28,6 +29,8 @@ func main() {
 	flag.StringVar(&endpoint, "endpoint", "", "MinIO endpoint url, e.g https://minio-lb:9000")
 	flag.BoolVar(&dryRun, "dry-run", false, "doesn't recover deleted objects, simply lists the delete marker versions")
 	flag.BoolVar(&dryRun, "n", false, "doesn't recover deleted objects, simply lists the delete marker versions")
+	flag.BoolVar(&insecure, "insecure", false, "connect via HTTP")
+	flag.BoolVar(&insecure, "k", false, "connect via HTTP")
 	flag.Parse()
 
 	if bucket == "" {
@@ -39,7 +42,7 @@ func main() {
 
 	s3Client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: false,
+		Secure: !insecure,
 	})
 	if err != nil {
 		log.Fatal("failed to connect to MinIO")
