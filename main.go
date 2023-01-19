@@ -17,6 +17,7 @@ func main() {
 		accessKey string
 		secretKey string
 		endpoint  string
+		dryRun    bool
 	)
 	flag.StringVar(&prefix, "prefix", "", "prefix matching the objects to be recovered")
 	flag.StringVar(&bucket, "bucket", "", "bucket")
@@ -25,6 +26,8 @@ func main() {
 	flag.StringVar(&secretKey, "secret-key", "", "MinIO secret key")
 	flag.StringVar(&secretKey, "sk", "", "MinIO secret key")
 	flag.StringVar(&endpoint, "endpoint", "", "MinIO endpoint url, e.g https://minio-lb:9000")
+	flag.BoolVar(&dryRun, "dry-run", false, "doesn't recover deleted objects, simply lists the delete marker versions")
+	flag.BoolVar(&dryRun, "n", false, "doesn't recover deleted objects, simply lists the delete marker versions")
 	flag.Parse()
 
 	if bucket == "" {
@@ -42,6 +45,9 @@ func main() {
 		log.Fatal("failed to connect to MinIO")
 	}
 
+	if dryRun {
+		fmt.Println("Objects with their current version as delete markers:")
+	}
 	undoRemoveCh := make(chan minio.ObjectInfo)
 	go func() {
 		defer close(undoRemoveCh)
@@ -59,6 +65,9 @@ func main() {
 			}
 			if obj.IsDeleteMarker && obj.IsLatest {
 				fmt.Printf("%s: %s\n", obj.Key, obj.VersionID)
+				if dryRun {
+					continue // skip adding objects to undoRemoveCh
+				}
 				undoRemoveCh <- obj
 			}
 		}
